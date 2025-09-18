@@ -1,4 +1,4 @@
-# Linux-soft-Raid-monitoring
+# Linux soft raid monitoring
 New modern Template for Zabbix v7(6)
 
 
