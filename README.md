@@ -29,4 +29,4 @@ Just "out of the box".
 
  
 ---
-#Use Perl or Die!
+use Perl or Die $!;
