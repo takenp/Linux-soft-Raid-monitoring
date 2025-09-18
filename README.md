@@ -13,13 +13,19 @@ Just "Out of the Box".
 **What this template does:**
 
 - --> Discovers md-raids using discovery rule;
-- --> Adds 4 data items for each raid discovered: Raid Type, Raid State, Raid members, Raid Sync State;
-- --> Adds 2 Trigger Alerts for each raid discovered: "Raid is degraded" and "Raid is sync state".
-
+- --> Adds 4 data items for each raid discovered:
+  + Raid Type,
+  + Raid State,
+  + Raid members,
+  + Raid Sync State;
+- --> Adds 2 Trigger Alerts for each raid discovered:
+  + "Raid is degraded",
+  + "Raid is sync state"
 
 
   p.s.
-  have not tested it on Zabbix v6 yet
+  
+  have not tested it on Zabbix v6 yet!
 
  
 ---
