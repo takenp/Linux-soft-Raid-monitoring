@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>7.4</version>
+    <template_groups>
+        <template_group>
+            <uuid>e960332b3f6c46a1956486d4f3f99fce</uuid>
+            <name>Templates/Server hardware</name>
+        </template_group>
+    </template_groups>
+    <templates>
+        <template>
+            <uuid>fe789ba0e01f46a1b10adc47e6bc7b47</uuid>
+            <template>Linux soft Raid</template>
+            <name>Linux soft Raid</name>
+            <groups>
+                <group>
+                    <name>Templates/Server hardware</name>
+                </group>
+            </groups>
+            <discovery_rules>
+                <discovery_rule>
+                    <uuid>aeefd7982b1b47eba4a216a40ee6f247</uuid>
+                    <name>Soft Raids discovery</name>
+                    <key>vfs.dev.discovery[]</key>
+                    <delay>1h</delay>
+                    <filter>
+                        <evaltype>AND</evaltype>
+                        <conditions>
+                            <condition>
+                                <macro>{#DEVTYPE}</macro>
+                                <value>disk</value>
+                            </condition>
+                            <condition>
+                                <macro>{#MDNAME}</macro>
+                                <value>{$MDNAME.MATCHES}</value>
+                            </condition>
+                        </conditions>
+                    </filter>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>f365c6fe14394f8a84ddac2f7cac7dfb</uuid>
+                            <name>{#MDNAME}: Raid members</name>
+                            <key>vfs.dir.get[/sys/block/{#MDNAME}/md/,dev.+,,dir,,0,,,,,]</key>
+                            <delay>30m</delay>
+                            <value_type>TEXT</value_type>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <parameters>
+                                        <parameter>$.[*].basename</parameter>
+                                    </parameters>
+                                </step>
+                                <step>
+                                    <type>STR_REPLACE</type>
+                                    <parameters>
+                                        <parameter>dev-</parameter>
+                                        <parameter/>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>disk</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>9a20eba03a454d3790e363a734a842b0</uuid>
+                            <name>{#MDNAME}: Raid state</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/degraded]</key>
+                            <trends>0</trends>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>disk</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>ff3ec8df96e94bdc88147280c4d31415</uuid>
+                                    <expression>last(/Linux soft Raid/vfs.file.contents[/sys/block/{#MDNAME}/md/degraded])&gt;0</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>last(/Linux soft Raid/vfs.file.contents[/sys/block/{#MDNAME}/md/degraded])=0</recovery_expression>
+                                    <name>{HOST.NAME}: [{#MDNAME}]  is degrated!</name>
+                                    <priority>HIGH</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>component</tag>
+                                            <value>storage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>496eb36b34b843b09e3bd9b0182811d8</uuid>
+                            <name>{#MDNAME}: Raid type</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/level]</key>
+                            <delay>30m</delay>
+                            <value_type>TEXT</value_type>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>disk</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>f913668387ec479b9249223870d9fd5b</uuid>
+                            <name>{#MDNAME}: Raid sync state</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action]</key>
+                            <value_type>TEXT</value_type>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>disk</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>73fe76d4d43c4429b41df2274c6fe6c5</uuid>
+                                    <expression>last(/Linux soft Raid/vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action])=&quot;recover&quot;</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>last(/Linux soft Raid/vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action])=&quot;idle&quot;</recovery_expression>
+                                    <name>{HOST.NAME}: [{#MDNAME}]  is in sync state</name>
+                                    <priority>WARNING</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>component</tag>
+                                            <value>storage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <preprocessing>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <parameters>
+                                <parameter>DEVNAME</parameter>
+                                <parameter>MDNAME</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+            <tags>
+                <tag>
+                    <tag>class</tag>
+                    <value>os</value>
+                </tag>
+                <tag>
+                    <tag>target</tag>
+                    <value>linux</value>
+                </tag>
+            </tags>
+            <macros>
+                <macro>
+                    <macro>{$MDNAME.MATCHES}</macro>
+                    <value>md[0-9]+</value>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+</zabbix_export>
