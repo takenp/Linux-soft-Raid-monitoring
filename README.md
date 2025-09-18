@@ -6,7 +6,7 @@ This template gives minimum monitoring of Linux mdadm/soft raids on Zabbix using
 Just "out of the box".
 
 - Download the template
-- Add it to your Zabbix server
+- Import it to your Zabbix server
 - Add it to a host.
 
 
