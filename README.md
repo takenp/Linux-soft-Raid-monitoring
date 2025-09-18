@@ -2,15 +2,17 @@
 New modern Template for Zabbix v7(6)
 
 
-This template gives minimum monitoring of Linux mdadm/soft raids on Zabbix using simple common discovery without any additional steps. 
+This template gives a minimum of Linux mdadm/soft raids monitoring on Zabbix using simple common discovery without any additional steps. 
 Just "out of the box".
+
+## Steps
 
 - Download the template
 - Import it to Zabbix server
 - Add it to a host.
 
 
-**What this template does:**
+## What this template does:
 
 - Discovers md-raids using discovery rule;
 - Adds 4 data items for each raid discovered:
@@ -22,11 +24,9 @@ Just "out of the box".
   + "Raid is degraded",
   + "Raid is sync state"
 
+ 
+---
 
   p.s.
   
-  have not tested it on Zabbix v6 yet!
-
- 
----
-use Perl or Die $!;
+  have not tested it on Zabbix 6 yet
