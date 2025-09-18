@@ -22,7 +22,7 @@ Just "out of the box".
   + Raid Sync State;
 - Adds 2 Trigger Alerts for the each raid:
   + "Raid is degraded",
-  + "Raid is sync state"
+  + "Raid is in a sync state"
 
  
 ---
