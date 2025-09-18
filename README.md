@@ -3,11 +3,11 @@ New modern Template for Zabbix v7(6)
 
 
 This template gives minimum monitoring of Linux mdadm/soft raids on Zabbix using simple common discovery without any additional steps. 
-Just "Out of the Box".
+Just "out of the box".
 
 - Download the template
-- Add it to Zabbix server
-- Add it to host.
+- Add it to your Zabbix server
+- Add it to a host.
 
 
 **What this template does:**
