@@ -15,12 +15,12 @@ Just "out of the box".
 ## What this template does:
 
 - Discovers md-raids using discovery rule;
-- Adds 4 data items for each raid discovered:
+- Adds 4 data items for the each raid:
   + Raid Type,
   + Raid State,
   + Raid members,
   + Raid Sync State;
-- Adds 2 Trigger Alerts for each raid discovered:
+- Adds 2 Trigger Alerts for the each raid:
   + "Raid is degraded",
   + "Raid is sync state"
 
