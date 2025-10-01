@@ -9,20 +9,24 @@ Just "out of the box".
 
 - Download the template
 - Import it to Zabbix server
-- Add it to a host.
+- Add to a host.
 
 
 ## What this template does:
 
 - Discovers md-raids using discovery rule;
-- Adds 4 data items for the each raid:
+- Adds most important data items for the each raid:
   + Raid Type,
   + Raid State,
   + Raid members,
   + Raid Sync State;
+  + Disk state (active or spare);
+  + Disk's slot number;
 - Adds 2 Trigger Alerts for the each raid:
   + "Raid is degraded",
-  + "Raid is in a sync state"
+  + "Raid is in a sync state",
+  + "Raid pool changed",
+  + "Disk state changed"
 
  
 ---
