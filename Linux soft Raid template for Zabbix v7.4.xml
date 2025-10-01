@@ -1,162 +1,292 @@
-zabbix_export:
-  version: '7.4'
-  template_groups:
-    - uuid: e960332b3f6c46a1956486d4f3f99fce
-      name: 'Templates/Server hardware'
-  templates:
-    - uuid: d0c0a22f328749749697699f592f1377
-      template: 'Linux soft Raid 2.0'
-      name: 'Linux soft Raid 2.0'
-      groups:
-        - name: 'Templates/Server hardware'
-      discovery_rules:
-        - uuid: 251e1641a0ef436389b41832284ae56f
-          name: '{#MDNAME}: Disk members'
-          type: DEPENDENT
-          key: 'md.disk.members[{#MDNAME}]'
-          item_prototypes:
-            - uuid: a61025786dc64868a1043348c0765a86
-              name: '{#MDNAME}:{#DISKNAME}: slot number'
-              key: 'vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/slot]'
-              delay: 1h
-              value_type: TEXT
-              tags:
-                - tag: component
-                  value: storage
-                - tag: disk
-                  value: '{#DISKNAME}'
-                - tag: raid
-                  value: '{#MDNAME}'
-            - uuid: 6c5b24906b6a476d8ad12ed809931ffa
-              name: '{#MDNAME}:{#DISKNAME}: disk state'
-              key: 'vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state]'
-              value_type: TEXT
-              preprocessing:
-                - type: STR_REPLACE
-                  parameters:
-                    - in_sync
-                    - 'active sync'
-              tags:
-                - tag: component
-                  value: storage
-                - tag: disk
-                  value: '{#DISKNAME}'
-                - tag: raid
-                  value: '{#MDNAME}'
-              trigger_prototypes:
-                - uuid: d7356816dd844bb18235a340efd597d7
-                  expression: 'last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#1)<>last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#2)'
-                  name: '{HOST.NAME} -> {#MDNAME}:{#DISKNAME} - disk state changed!'
-                  event_name: '{HOST.NAME} -> {#MDNAME}:{#DISKNAME}  disk state changed from  [ {?last(//vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#2)} ] to [ {?last(//vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#1)} ]'
-                  priority: INFO
-                  manual_close: 'YES'
-          parent_discovery_rule:
-            key: 'vfs.dev.discovery[]'
-          master_item:
-            key: 'vfs.dir.get[/sys/block/{#MDNAME}/md/,dev.+,,dir,,0,,,,,]'
-          lld_macro_paths:
-            - lld_macro: '{#DISKNAME}'
-              path: $.diskname
-            - lld_macro: '{#DISKPATH}'
-              path: $.diskpath
-        - uuid: a70ce577b55a4e8aaa95f52c2cf98da6
-          name: 'Soft Raids discovery'
-          key: 'vfs.dev.discovery[]'
-          delay: 1h
-          filter:
-            evaltype: AND
-            conditions:
-              - macro: '{#DEVTYPE}'
-                value: disk
-              - macro: '{#MDNAME}'
-                value: '{$MDNAME.MATCHES}'
-          item_prototypes:
-            - uuid: 354188ea130143b0959878697d2d6cbf
-              name: '{#MDNAME}: Raid members'
-              key: 'vfs.dir.get[/sys/block/{#MDNAME}/md/,dev.+,,dir,,0,,,,,]'
-              delay: 1h
-              value_type: TEXT
-              preprocessing:
-                - type: JAVASCRIPT
-                  parameters:
-                    - |
-                      var filesystems = JSON.parse(value);
-                      
-                      result = filesystems.map(function (filesystem) {
-                      	return {
-                      		'diskname': filesystem.basename
-                      	};
-                      });
-                      
-                      return JSON.stringify(result);
-                - type: STR_REPLACE
-                  parameters:
-                    - dev-
-                    - ''
-              tags:
-                - tag: component
-                  value: storage
-                - tag: raid
-                  value: '{$MDNAME}'
-            - uuid: d0acb4ef9d7a4111bcb45d36c41aa2f4
-              name: '{#MDNAME}: Raid state'
-              key: 'vfs.file.contents[/sys/block/{#MDNAME}/md/degraded]'
-              trends: '0'
-              tags:
-                - tag: component
-                  value: storage
-                - tag: raid
-                  value: '{#MDNAME}'
-              trigger_prototypes:
-                - uuid: 73095fee2ce4462999c004b56fecd634
-                  expression: 'last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/degraded])>0'
-                  recovery_mode: RECOVERY_EXPRESSION
-                  recovery_expression: 'last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/degraded])=0'
-                  name: '{HOST.NAME}::{#MDNAME}  is degrated!'
-                  priority: AVERAGE
-                  tags:
-                    - tag: component
-                      value: storage
-            - uuid: 945ec5587bc44a798f899aca490241d6
-              name: '{#MDNAME}: Raid type'
-              key: 'vfs.file.contents[/sys/block/{#MDNAME}/md/level]'
-              delay: 6h
-              value_type: TEXT
-              tags:
-                - tag: component
-                  value: storage
-                - tag: raid
-                  value: '{#MDNAME}'
-            - uuid: 0f90fed2e26e4086a1fb192144cea6e9
-              name: '{#MDNAME}: Raid sync state'
-              key: 'vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action]'
-              value_type: TEXT
-              tags:
-                - tag: component
-                  value: storage
-                - tag: raid
-                  value: '{#MDNAME}'
-              trigger_prototypes:
-                - uuid: 0747d2c917124ce3b6568d0328a675f6
-                  expression: 'last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action])="recover"'
-                  recovery_mode: RECOVERY_EXPRESSION
-                  recovery_expression: 'last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action])="idle"'
-                  name: '{HOST.NAME}::{#MDNAME}  is in sync state'
-                  opdata: '{?last(//vfs.file.contents[/sys/block/{#MDNAME}/md/sync_completed])}'
-                  priority: WARNING
-                  tags:
-                    - tag: component
-                      value: storage
-          preprocessing:
-            - type: STR_REPLACE
-              parameters:
-                - DEVNAME
-                - MDNAME
-      tags:
-        - tag: class
-          value: os
-        - tag: target
-          value: linux
-      macros:
-        - macro: '{$MDNAME.MATCHES}'
-          value: 'md[0-9]+'
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>7.4</version>
+    <template_groups>
+        <template_group>
+            <uuid>e960332b3f6c46a1956486d4f3f99fce</uuid>
+            <name>Templates/Server hardware</name>
+        </template_group>
+    </template_groups>
+    <templates>
+        <template>
+            <uuid>d0c0a22f328749749697699f592f1377</uuid>
+            <template>Linux soft Raid 2.0</template>
+            <name>Linux soft Raid 2.0</name>
+            <groups>
+                <group>
+                    <name>Templates/Server hardware</name>
+                </group>
+            </groups>
+            <discovery_rules>
+                <discovery_rule>
+                    <uuid>251e1641a0ef436389b41832284ae56f</uuid>
+                    <name>{#MDNAME}: Disk members</name>
+                    <type>DEPENDENT</type>
+                    <key>md.disk.members[{#MDNAME}]</key>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>a61025786dc64868a1043348c0765a86</uuid>
+                            <name>{#MDNAME}:{#DISKNAME}: slot number</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/slot]</key>
+                            <delay>6h</delay>
+                            <value_type>TEXT</value_type>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>disk</tag>
+                                    <value>{#DISKNAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>raid</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>6c5b24906b6a476d8ad12ed809931ffa</uuid>
+                            <name>{#MDNAME}:{#DISKNAME}: disk state</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state]</key>
+                            <delay>10m</delay>
+                            <value_type>TEXT</value_type>
+                            <preprocessing>
+                                <step>
+                                    <type>STR_REPLACE</type>
+                                    <parameters>
+                                        <parameter>in_sync</parameter>
+                                        <parameter>active sync</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>disk</tag>
+                                    <value>{#DISKNAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>raid</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>d7356816dd844bb18235a340efd597d7</uuid>
+                                    <expression>last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#1)&lt;&gt;last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#2)</expression>
+                                    <name>{HOST.NAME} -&gt; {#MDNAME}:{#DISKNAME} - disk state changed!</name>
+                                    <event_name>{HOST.NAME} -&gt; {#MDNAME}:{#DISKNAME}  disk state changed from  [ {?last(//vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#2)} ] --&gt;  [ {?last(//vfs.file.contents[/sys/block/{#MDNAME}/md/dev-{#DISKNAME}/state],#1)} ]</event_name>
+                                    <priority>INFO</priority>
+                                    <manual_close>YES</manual_close>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <parent_discovery_rule>
+                        <key>vfs.dev.discovery[]</key>
+                    </parent_discovery_rule>
+                    <master_item>
+                        <key>vfs.dir.get[/sys/block/{#MDNAME}/md/,dev.+,,dir,,0,,,,,]</key>
+                    </master_item>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#DISKNAME}</lld_macro>
+                            <path>$.diskname</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#DISKPATH}</lld_macro>
+                            <path>$.diskpath</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>a70ce577b55a4e8aaa95f52c2cf98da6</uuid>
+                    <name>Soft Raids discovery</name>
+                    <key>vfs.dev.discovery[]</key>
+                    <delay>1h</delay>
+                    <filter>
+                        <evaltype>AND</evaltype>
+                        <conditions>
+                            <condition>
+                                <macro>{#DEVTYPE}</macro>
+                                <value>disk</value>
+                            </condition>
+                            <condition>
+                                <macro>{#MDNAME}</macro>
+                                <value>{$MDNAME.MATCHES}</value>
+                            </condition>
+                        </conditions>
+                    </filter>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>354188ea130143b0959878697d2d6cbf</uuid>
+                            <name>{#MDNAME}: Raid members</name>
+                            <key>vfs.dir.get[/sys/block/{#MDNAME}/md/,dev.+,,dir,,0,,,,,]</key>
+                            <delay>30m</delay>
+                            <value_type>TEXT</value_type>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var filesystems = JSON.parse(value);
+
+result = filesystems.map(function (filesystem) {
+	return {
+		'diskname': filesystem.basename
+	};
+});
+
+return JSON.stringify(result);</parameter>
+                                    </parameters>
+                                </step>
+                                <step>
+                                    <type>STR_REPLACE</type>
+                                    <parameters>
+                                        <parameter>dev-</parameter>
+                                        <parameter/>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>raid</tag>
+                                    <value>{$MDNAME}</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>44817b51762b4dd986d4e012b696222f</uuid>
+                                    <expression>last(/Linux soft Raid 2.0/vfs.dir.get[/sys/block/{#MDNAME}/md/,dev.+,,dir,,0,,,,,],#1)&lt;&gt;last(/Linux soft Raid 2.0/vfs.dir.get[/sys/block/{#MDNAME}/md/,dev.+,,dir,,0,,,,,],#2)</expression>
+                                    <name>{HOST.NAME} --&gt; {#MDNAME}  disk pool changed</name>
+                                    <opdata>{ITEM.LASTVALUE}</opdata>
+                                    <priority>WARNING</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>component</tag>
+                                            <value>storage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>d0acb4ef9d7a4111bcb45d36c41aa2f4</uuid>
+                            <name>{#MDNAME}: Raid state</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/degraded]</key>
+                            <delay>5m</delay>
+                            <trends>0</trends>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>raid</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>73095fee2ce4462999c004b56fecd634</uuid>
+                                    <expression>last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/degraded])&gt;0</expression>
+                                    <name>{HOST.NAME} --&gt; {#MDNAME}  is degrated!</name>
+                                    <priority>AVERAGE</priority>
+                                    <description>last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/degraded])=0</description>
+                                    <tags>
+                                        <tag>
+                                            <tag>component</tag>
+                                            <value>storage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>945ec5587bc44a798f899aca490241d6</uuid>
+                            <name>{#MDNAME}: Raid type</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/level]</key>
+                            <delay>6h</delay>
+                            <value_type>TEXT</value_type>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>raid</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>0f90fed2e26e4086a1fb192144cea6e9</uuid>
+                            <name>{#MDNAME}: Raid sync state</name>
+                            <key>vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action]</key>
+                            <delay>5m</delay>
+                            <value_type>TEXT</value_type>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>storage</value>
+                                </tag>
+                                <tag>
+                                    <tag>raid</tag>
+                                    <value>{#MDNAME}</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>0747d2c917124ce3b6568d0328a675f6</uuid>
+                                    <expression>last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action])=&quot;recover&quot;</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>last(/Linux soft Raid 2.0/vfs.file.contents[/sys/block/{#MDNAME}/md/sync_action])=&quot;idle&quot;</recovery_expression>
+                                    <name>{HOST.NAME} --&gt; {#MDNAME}  is in sync state</name>
+                                    <priority>WARNING</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>component</tag>
+                                            <value>storage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <preprocessing>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <parameters>
+                                <parameter>DEVNAME</parameter>
+                                <parameter>MDNAME</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+            <tags>
+                <tag>
+                    <tag>class</tag>
+                    <value>os</value>
+                </tag>
+                <tag>
+                    <tag>target</tag>
+                    <value>linux</value>
+                </tag>
+            </tags>
+            <macros>
+                <macro>
+                    <macro>{$MDNAME.MATCHES}</macro>
+                    <value>md[0-9]+</value>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+</zabbix_export>
